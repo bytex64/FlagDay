@@ -1,0 +1,70 @@
+#!/usr/bin/perl
+use YAML;
+use File::Basename;
+use FlagDay;
+use strict;
+
+sub find_key_for_pubkey {
+	my ($keys, $pubkey) = @_;
+	while (my ($k, $v) = each %$keys) {
+		if ($v->{pubkey} eq $pubkey) {
+			return $k;
+		}
+	}
+	return undef;
+}
+
+my $inventory = YAML::LoadFile('inventory.yml');
+my $keys;
+if (-e 'keys.yml') {
+	$keys = YAML::LoadFile('keys.yml');
+} else {
+	$keys = {};
+}
+
+print "Fetching SSH keys\n";
+for my $machine (@{$inventory}) {
+	print "  $machine->{name}\n";
+	$machine->{keys_out} = [];
+	$machine->{keys_in} = [];
+	my @l = FlagDay::ssh($machine->{name}, 'ls .ssh/*.pub');
+	for my $key (@l) {
+		my $keyname = fileparse($key, '.pub');
+		print "    $keyname...\n";
+		my @keylines = FlagDay::ssh($machine->{name}, qq!cat .ssh/$keyname.pub .ssh/$keyname!);
+		my $key = {
+			pubkey => shift @keylines,
+			privkey => join("\n", @keylines),
+		};
+		if (exists $keys->{$keyname}) {
+			# Audit to make sure it's the same 
+			if ($key->{pubkey} ne $keys->{$keyname}->{pubkey}) {
+				die "$machine->{name}'s '$keyname' pubkey doesn't match!";
+			}
+			if ($key->{privkey} ne $keys->{$keyname}->{privkey}) {
+				die "$machine->{name}'s '$keyname' pubkey doesn't match!";
+			}
+		} else {
+			$keys->{$keyname} = $key;
+		}
+		push @{$machine->{keys_out}}, $keyname;
+	}
+}
+
+print "Fetching SSH keys\n";
+for my $machine (@{$inventory}) {
+	print "  $machine->{name}\n";
+	my @authlines = FlagDay::ssh($machine->{name}, qq!cat .ssh/authorized_keys!);
+	for my $pubkey (@authlines) {
+		my $keyname = find_key_for_pubkey($keys, $pubkey);
+		if (!$keyname) {
+			print "    No key found for pubkey on $machine->{name}\n";
+			print "      $pubkey\n";
+		} else {
+			push @{$machine->{keys_in}}, $keyname;
+		}
+	}
+}
+
+YAML::DumpFile('inventory.yml', $inventory);
+YAML::DumpFile('keys.yml', $keys);
