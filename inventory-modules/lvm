@@ -1,0 +1,64 @@
+#!/usr/bin/perl
+use YAML;
+use FlagDay;
+use strict;
+
+sub find_vg {
+	my ($info, $name) = @_;
+	my ($r) = grep {
+		$_->{name} eq $name
+	} @$info;
+	return $r;
+}
+
+my $config = YAML::LoadFile('config.yml')
+	or die "Could not load config.yml\n";
+
+my $lvm = {};
+
+my @hosts = map { $_->{name} } @{$config->{hosts}};
+
+print "Fetching LVM\n";
+for my $name (@hosts) {
+	print "  $name\n";
+
+	my @out = FlagDay::ssh($name, 'sudo vgs --unit=k --noheadings --nosuffix -o vg_name,vg_size,vg_free');
+	next unless @out;
+	my $info = $lvm->{$name} = [];
+	for (@out) {
+		s/^\s+//;
+		my ($vg, $size, $free) = split(/\s+/);
+		push @{$info}, {
+		        name => $vg,
+			size => $size,
+			free => $free,
+			pvs => [],
+			lvs => [],
+		}
+	}
+
+	my @out = FlagDay::ssh($name, 'sudo pvs --unit=k --noheadings --nosuffix -o pv_name,vg_name,pv_size,pv_free');
+	for (@out) {
+		s/^\s+//;
+		my ($pv, $vg, $size, $free) = split(/\s+/);
+		my $vg_info = find_vg($info, $vg);
+		push @{$vg_info->{pvs}}, {
+			name => $pv,
+			size => $size,
+			free => $free,
+		};
+	}
+
+	my @out = FlagDay::ssh($name, 'sudo lvs --unit=k --noheadings --nosuffix -o lv_name,vg_name,lv_size');
+	for (@out) {
+		s/^\s+//;
+		my ($lv, $vg, $size) = split(/\s+/);
+		my $vg_info = find_vg($info, $vg);
+		push @{$vg_info->{lvs}}, {
+			name => $lv,
+			size => $size,
+		};
+	}
+}
+
+YAML::DumpFile("$ENV{FLAGDAY_INVENTORY}/lvm.yml", $lvm);

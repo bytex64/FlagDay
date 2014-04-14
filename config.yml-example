@@ -1,0 +1,15 @@
+---
+
+hosts:
+  - name: bob
+    files:
+      - /etc
+  - name: george
+    files:
+      - /etc
+      - /home
+inventory-modules:
+  - ssh
+  - filesystems
+  - lvm
+  - files

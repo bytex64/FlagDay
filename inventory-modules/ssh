@@ -14,24 +14,25 @@ sub find_key_for_pubkey {
 	return undef;
 }
 
-my $inventory = YAML::LoadFile('inventory.yml');
-my $keys;
-if (-e 'keys.yml') {
-	$keys = YAML::LoadFile('keys.yml');
-} else {
-	$keys = {};
-}
+my $config = YAML::LoadFile('config.yml')
+	or die "Could not load config.yml\n";
+
+my $keys = {};
+my $machines = {};
+
+my @hosts = map { $_->{name} } @{$config->{hosts}};
 
 print "Fetching SSH keys\n";
-for my $machine (@{$inventory}) {
-	print "  $machine->{name}\n";
-	$machine->{keys_out} = [];
-	$machine->{keys_in} = [];
-	my @l = FlagDay::ssh($machine->{name}, 'ls .ssh/*.pub');
+for my $name (@hosts) {
+	print "  $name\n";
+	my $machine = $machines->{$name} = {};
+	$machine->{keys} = [];
+	$machine->{authorized_keys} = [];
+	my @l = FlagDay::ssh($name, 'ls .ssh/*.pub');
 	for my $key (@l) {
 		my $keyname = fileparse($key, '.pub');
 		print "    $keyname...\n";
-		my @keylines = FlagDay::ssh($machine->{name}, qq!cat .ssh/$keyname.pub .ssh/$keyname!);
+		my @keylines = FlagDay::ssh($name, qq!cat .ssh/$keyname.pub .ssh/$keyname!);
 		my $key = {
 			pubkey => shift @keylines,
 			privkey => join("\n", @keylines),
@@ -47,24 +48,25 @@ for my $machine (@{$inventory}) {
 		} else {
 			$keys->{$keyname} = $key;
 		}
-		push @{$machine->{keys_out}}, $keyname;
+		push @{$machine->{keys}}, $keyname;
 	}
 }
 
-print "Fetching SSH keys\n";
-for my $machine (@{$inventory}) {
-	print "  $machine->{name}\n";
-	my @authlines = FlagDay::ssh($machine->{name}, qq!cat .ssh/authorized_keys!);
+print "Fetching authorized keys\n";
+for my $name (@hosts) {
+	my $machine = $machines->{$name};
+	print "  $name\n";
+	my @authlines = FlagDay::ssh($name, qq!cat .ssh/authorized_keys!);
 	for my $pubkey (@authlines) {
 		my $keyname = find_key_for_pubkey($keys, $pubkey);
 		if (!$keyname) {
-			print "    No key found for pubkey on $machine->{name}\n";
+			print "    No key found for pubkey on $name\n";
 			print "      $pubkey\n";
 		} else {
-			push @{$machine->{keys_in}}, $keyname;
+			push @{$machine->{authorized_keys}}, $keyname;
 		}
 	}
 }
 
-YAML::DumpFile('inventory.yml', $inventory);
-YAML::DumpFile('keys.yml', $keys);
+YAML::DumpFile("$ENV{FLAGDAY_INVENTORY}/ssh-machines.yml", $machines);
+YAML::DumpFile("$ENV{FLAGDAY_INVENTORY}/ssh-keys.yml", $keys);
