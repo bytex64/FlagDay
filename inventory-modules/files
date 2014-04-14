@@ -7,7 +7,8 @@ use feature 'switch';
 my $config = YAML::LoadFile('config.yml')
 	or die "Could not load config.yml\n";
 
-mkdir "$ENV{FLAGDAY_HOME}/files";
+mkdir $ENV{FLAGDAY_FILES}
+	unless -d $ENV{FLAGDAY_FILES};
 
 print "Fetching files\n";
 for my $host (@{$config->{hosts}}) {
@@ -18,7 +19,7 @@ for my $host (@{$config->{hosts}}) {
 		my $safe_path = $path;
 		$safe_path =~ s'^/'';
 		$safe_path =~ s'/'_';
-		system qq!ssh $host->{name} 'sudo tar cz -C / $path' | cat >$ENV{FLAGDAY_HOME}/files/$host->{name}-$safe_path.tar.gz!;
+		system qq!(ssh $host->{name} 'sudo tar cz -C / --one-file-system $path' | cat >$ENV{FLAGDAY_FILES}/$host->{name}-$safe_path.tar.gz!;
 		if ($? >> 8 != 0) {
 			die "Failed to back up $host->{name}:$path\n";
 		}

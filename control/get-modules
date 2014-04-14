@@ -1,0 +1,12 @@
+#!/usr/bin/perl
+use YAML;
+use strict;
+
+my $config = YAML::LoadFile('config.yml')
+	or die "Could not load config.yml\n";
+
+my $type = shift;
+
+for my $module (@{$config->{"$type-modules"}}) {
+	print "$module\n";
+}
