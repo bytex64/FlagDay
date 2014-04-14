@@ -19,7 +19,12 @@ for my $host (@{$config->{hosts}}) {
 		my $safe_path = $path;
 		$safe_path =~ s'^/'';
 		$safe_path =~ s'/'_';
-		system qq!(ssh $host->{name} 'sudo tar cz -C / --one-file-system $path' | cat >$ENV{FLAGDAY_FILES}/$host->{name}-$safe_path.tar.gz!;
+		my $outfile = "$ENV{FLAGDAY_FILES}/$host->{name}-$safe_path.tar.gz";
+		if (-e $outfile) {
+			print "      Refusing to overwriting $outfile\n";
+			next;
+		}
+		system qq!ssh $host->{name} 'sudo tar cz -C / --one-file-system $path' | cat >$outfile!;
 		if ($? >> 8 != 0) {
 			die "Failed to back up $host->{name}:$path\n";
 		}
