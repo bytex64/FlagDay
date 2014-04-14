@@ -1,0 +1,26 @@
+#!/usr/bin/perl
+use YAML;
+use FlagDay;
+use strict;
+use feature 'switch';
+
+my $config = YAML::LoadFile('config.yml')
+	or die "Could not load config.yml\n";
+
+mkdir "$ENV{FLAGDAY_HOME}/files";
+
+print "Fetching files\n";
+for my $host (@{$config->{hosts}}) {
+	next unless exists $host->{files};
+	print "  $host->{name}\n";
+	for my $path (@{$host->{files}}) {
+		print "    $path...\n";
+		my $safe_path = $path;
+		$safe_path =~ s'^/'';
+		$safe_path =~ s'/'_';
+		system qq!ssh $host->{name} 'sudo tar cz -C / $path' | cat >$ENV{FLAGDAY_HOME}/files/$host->{name}-$safe_path.tar.gz!;
+		if ($? >> 8 != 0) {
+			die "Failed to back up $host->{name}:$path\n";
+		}
+	}
+}
