@@ -4,8 +4,8 @@ FLAGDAY_FILES = $(FLAGDAY_HOME)/files
 FLAGDAY_GENERATED = $(FLAGDAY_HOME)/generated
 export FLAGDAY_HOME FLAGDAY_INVENTORY FLAGDAY_FILES FLAGDAY_GENERATED
 
-inventory_modules ::= $(shell control/get-modules inventory)
-generate_modules ::= $(shell control/get-modules generate)
+inventory_modules := $(shell control/get-modules inventory)
+generate_modules := $(shell control/get-modules generate)
 
 .PHONY: all
 all:
