@@ -28,3 +28,4 @@ inventory-modules:
   - lvm
   - files
   - smbfs
+  - dpkg
