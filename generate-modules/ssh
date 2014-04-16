@@ -1,0 +1,28 @@
+#!/usr/bin/perl
+use YAML;
+use strict;
+use feature 'switch';
+
+my $config = YAML::LoadFile('config.yml')
+	or die "Could not load config.yml\n";
+
+my $ssh_keys = YAML::LoadFile("$ENV{FLAGDAY_INVENTORY}/ssh-keys.yml") or
+	die "Cannot find $ENV{FLAGDAY_INVENTORY}/ssh-keys.yml\n";
+my $ssh_machines = YAML::LoadFile("$ENV{FLAGDAY_INVENTORY}/ssh-machines.yml") or
+	die "Cannot find $ENV{FLAGDAY_INVENTORY}/ssh-machines.yml\n";
+
+mkdir $ENV{FLAGDAY_GENERATED}
+	unless -d $ENV{FLAGDAY_GENERATED};
+
+my $keydir = "$ENV{FLAGDAY_GENERATED}/ssh-keys";
+mkdir $keydir
+	unless -d $keydir;
+
+my $keytype = $config->{options}->{ssh}->{'key-type'} || 'ecdsa';
+my $keybits = $config->{options}->{ssh}->{'key-bits'} || 2048;
+
+print "Generating new SSH keys\n";
+for my $keyname (keys %{$ssh_keys}) {
+	print "  $keyname...\n";
+	system qq!ssh-keygen -q -t $keytype -b $keybits -N '' -f $keydir/$keyname!;
+}
