@@ -8,8 +8,15 @@ hosts:
     files:
       - /etc
       - /home
+  - name: felix
+    smbfs:
+      - Users/felix
+    smbauth:
+      username: felix
+      password: thecat
 inventory-modules:
   - ssh
   - filesystems
   - lvm
   - files
+  - smbfs
