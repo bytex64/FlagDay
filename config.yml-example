@@ -1,5 +1,10 @@
 ---
 
+options:
+  password-length: 14
+  ssh:
+    key-type: ecdsa
+    key-bits: 384
 hosts:
   - name: bob
     files:
@@ -14,6 +19,9 @@ hosts:
     smbauth:
       username: felix
       password: thecat
+accounts:
+  - google
+  - PSN
 inventory-modules:
   - ssh
   - filesystems
