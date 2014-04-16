@@ -1,0 +1,21 @@
+#!/usr/bin/perl
+use YAML;
+use FlagDay;
+use File::Basename;
+use strict;
+use feature 'switch';
+
+my $config = YAML::LoadFile('config.yml')
+	or die "Could not load config.yml\n";
+
+my $slackpkg = {};
+
+print "Fetching slackware package lists\n";
+for my $host (@{$config->{hosts}}) {
+	my $name = $host->{name};
+	next unless $host->{slackpkg};
+	print "  $name\n";
+	$slackpkg->{$name} = [FlagDay::ssh($name, 'ls /var/log/packages')];
+}
+
+YAML::DumpFile("$ENV{FLAGDAY_INVENTORY}/slackpkg.yml", $slackpkg);
