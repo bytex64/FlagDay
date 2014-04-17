@@ -7,9 +7,12 @@ options:
     key-bits: 384
 hosts:
   - name: bob
+    ssh: 1
+    dpkg: 1
     files:
       - /etc
   - name: george
+    ssh: 1
     files:
       - /etc
       - /home

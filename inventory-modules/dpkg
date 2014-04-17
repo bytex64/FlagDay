@@ -12,6 +12,7 @@ my $dpkg = {};
 
 print "Fetching dpkg package lists\n";
 for my $host (@{$config->{hosts}}) {
+	next unless $host->{ssh};
 	my $name = $host->{name};
 	next unless $host->{dpkg};
 	print "  $name\n";

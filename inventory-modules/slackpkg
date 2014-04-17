@@ -12,6 +12,7 @@ my $slackpkg = {};
 
 print "Fetching slackware package lists\n";
 for my $host (@{$config->{hosts}}) {
+	next unless $host->{ssh};
 	my $name = $host->{name};
 	next unless $host->{slackpkg};
 	print "  $name\n";

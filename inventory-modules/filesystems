@@ -10,10 +10,10 @@ my $config = YAML::LoadFile('config.yml')
 
 my $filesystems = {};
 
-my @hosts = map { $_->{name} } @{$config->{hosts}};
-
 print "Fetching filesystems\n";
-for my $name (@hosts) {
+for my $host (@{$config->{hosts}}) {
+	next unless $host->{ssh};
+	my $name = $host->{name};
 	print "  $name\n";
 	my $fs = $filesystems->{$name} = [];
 	my @fstab = FlagDay::ssh($name, 'cat /etc/fstab');

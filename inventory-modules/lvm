@@ -16,10 +16,10 @@ my $config = YAML::LoadFile('config.yml')
 
 my $lvm = {};
 
-my @hosts = map { $_->{name} } @{$config->{hosts}};
-
 print "Fetching LVM\n";
-for my $name (@hosts) {
+for my $host (@{$config->{hosts}}) {
+	next unless $host->{ssh};
+	my $name = $host->{name};
 	print "  $name\n";
 
 	my @out = FlagDay::ssh($name, 'sudo vgs --unit=k --noheadings --nosuffix -o vg_name,vg_size,vg_free');

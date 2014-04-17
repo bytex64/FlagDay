@@ -12,7 +12,7 @@ mkdir $ENV{FLAGDAY_FILES}
 
 print "Fetching files\n";
 for my $host (@{$config->{hosts}}) {
-	next unless exists $host->{files};
+	next unless $host->{ssh} && exists $host->{files};
 	print "  $host->{name}\n";
 	for my $path (@{$host->{files}}) {
 		print "    $path...\n";

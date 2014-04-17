@@ -20,10 +20,10 @@ my $config = YAML::LoadFile('config.yml')
 my $keys = {};
 my $machines = {};
 
-my @hosts = map { $_->{name} } @{$config->{hosts}};
-
 print "Fetching SSH keys\n";
-for my $name (@hosts) {
+for my $host (@{$config->{hosts}}) {
+	next unless $host->{ssh};
+	my $name = $host->{name};
 	print "  $name\n";
 	my $machine = $machines->{$name} = {};
 	$machine->{keys} = [];
@@ -53,7 +53,9 @@ for my $name (@hosts) {
 }
 
 print "Fetching authorized keys\n";
-for my $name (@hosts) {
+for my $host (@{$config->{hosts}}) {
+	next unless $host->{ssh};
+	my $name = $host->{name};
 	my $machine = $machines->{$name};
 	print "  $name\n";
 	my @authlines = FlagDay::ssh($name, qq!cat .ssh/authorized_keys!);
