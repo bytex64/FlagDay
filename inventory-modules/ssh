@@ -40,7 +40,7 @@ for my $name (@hosts) {
 		if (exists $keys->{$keyname}) {
 			# Audit to make sure it's the same 
 			if ($key->{pubkey} ne $keys->{$keyname}->{pubkey}) {
-				die "$machine->{name}'s '$keyname' pubkey doesn't match!";
+				die "${name}'s '$keyname' pubkey doesn't match!";
 			}
 			if ($key->{privkey} ne $keys->{$keyname}->{privkey}) {
 				die "$machine->{name}'s '$keyname' pubkey doesn't match!";
