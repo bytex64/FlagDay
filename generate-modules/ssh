@@ -23,6 +23,10 @@ my $keybits = $config->{options}->{ssh}->{'key-bits'} || 2048;
 
 print "Generating new SSH keys\n";
 for my $keyname (keys %{$ssh_keys}) {
+	if (-e "$keydir/$keyname") {
+		print "  $keyname already exists; skipping\n";
+		next;
+	}
 	print "  $keyname...\n";
 	system qq!ssh-keygen -q -t $keytype -b $keybits -N '' -f $keydir/$keyname!;
 }
