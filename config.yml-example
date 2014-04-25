@@ -32,3 +32,9 @@ inventory-modules:
   - files
   - smbfs
   - dpkg
+generate-modules:
+  - passwd
+  - ssh
+push-modules:
+  - files
+  - smbfs

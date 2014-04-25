@@ -1,0 +1,47 @@
+#!/usr/bin/perl
+use YAML;
+use FlagDay;
+use strict;
+
+my $config = YAML::LoadFile('config.yml')
+	or die "Could not load config.yml\n";
+
+mkdir $ENV{FLAGDAY_FILES}
+	unless -d $ENV{FLAGDAY_FILES};
+
+print "Pushing files over SMB\n";
+for my $host (@{$config->{hosts}}) {
+	next unless exists $host->{smbfs};
+	print "  $host->{name}\n";
+	for my $path (@{$host->{smbfs}}) {
+		print "    $path...\n";
+		my @path = split('/', $path);
+		my $safe_path = join('_', @path);
+		my $share = shift @path;
+		$path = join('/', @path);
+		my $backupfile = "$ENV{FLAGDAY_FILES}/$host->{name}-$safe_path.tar";
+		if (!-e $backupfile) {
+			print "      No backup found for $path; skipping\n";
+			next;
+		}
+		my $auth;
+		if ($host->{smbauth}) {
+			open AUTH, '>', 'smbauth';
+			chmod 0600, *AUTH;
+			print AUTH "username = $host->{smbauth}->{username}\n";
+			print AUTH "password = $host->{smbauth}->{password}\n";
+			print AUTH "domain = $host->{smbauth}->{domain}\n";
+			close AUTH;
+			$auth = '-A smbauth';
+		}
+		system qq!smbclient //$host->{name}/Users $auth -d0 -c 'mkdir $host->{smbauth}->{username}\\Desktop\\$safe_path'!;
+		if ($? >> 8 != 0) {
+			warn "Failed to mkdir //$host->{name}/Users/$host->{smbauth}->{username}/Desktop/$safe_path\n";
+		}
+		system qq!smbclient //$host->{name}/Users $auth -d0 -Tx $backupfile -D $host->{smbauth}->{username}/Desktop/$safe_path!;
+		if ($? >> 8 != 0) {
+			warn "Failed to restore //$host->{name}/$share/$path\n";
+		}
+		unlink 'smbauth' if -e 'smbauth';
+	}
+}

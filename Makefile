@@ -6,6 +6,7 @@ export FLAGDAY_HOME FLAGDAY_INVENTORY FLAGDAY_FILES FLAGDAY_GENERATED
 
 inventory_modules := $(shell control/get-modules inventory)
 generate_modules := $(shell control/get-modules generate)
+push_modules := $(shell control/get-modules push)
 
 .PHONY: all
 all:
@@ -28,3 +29,9 @@ generate: $(addprefix generate-, $(generate_modules))
 
 generate-%:
 	generate-modules/$*
+
+.PHONY: push
+push: $(addprefix push-, $(push_modules))
+
+push-%:
+	push-modules/$*
